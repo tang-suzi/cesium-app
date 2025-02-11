@@ -5,6 +5,7 @@
 <script setup>
 import * as Cesium from "cesium";
 import { onMounted } from "vue";
+import geojson from "./assets/geo/area.js";
 onMounted(async () => {
   console.log(Cesium);
   // const viewer = new Cesium.Viewer("cesiumContainer");
@@ -64,8 +65,45 @@ onMounted(async () => {
   });
   const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(75343);
   tileset.style = heightStyle;
-
   viewer.scene.primitives.add(tileset);
+  const neighborhoodsPromise = await Cesium.GeoJsonDataSource.load(geojson);
+  viewer.dataSources.add(neighborhoodsPromise);
+  let neighborhoods = neighborhoodsPromise.entities;
+  for (let index = 0; index < neighborhoods.values.length; index++) {
+    const entity = neighborhoods.values[index];
+    if (Cesium.defined(entity.polygon)) {
+      entity.name = entity.properties.boro_name;
+      entity.polygon.material = Cesium.Color.fromRandom({
+        red: 0.1,
+        maximumGreen: 0.5,
+        minimumBlue: 0.5,
+        alpha: 0.6,
+      });
+
+      entity.polygon.classificationType = Cesium.ClassificationType.TERRAIN;
+
+      const polyPositions = entity.polygon.hierarchy.getValue(
+        Cesium.JulianDate.now()
+      ).positions;
+      let polyCenter = Cesium.BoundingSphere.fromPoints(polyPositions).center;
+      polyCenter = Cesium.Ellipsoid.WGS84.scaleToGeodeticSurface(polyCenter);
+      entity.position = polyCenter;
+      
+      // 生成标签
+      entity.label = {
+        text: entity.name, // 标签内容
+        showBackground: true, // 显示背景
+        // font: "14px monospace", // 字体
+        scale: 0.6, // 缩放
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER, // 水平位置
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM, // 垂直位置
+        pixelOffset: new Cesium.Cartesian2(0, -9), // 偏移
+        eyeOffset: new Cesium.Cartesian3(0, 0, -5), // 眼睛偏移
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(10.0, 8000.0), // 显示距离
+        disableDepthTestDistance: 100, // 深度测试
+      };
+    }
+  }
 });
 </script>
 
