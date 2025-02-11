@@ -6,10 +6,10 @@
 import * as Cesium from "cesium";
 import { onMounted } from "vue";
 onMounted(async () => {
-  console.log(Cesium)
+  console.log(Cesium);
   // const viewer = new Cesium.Viewer("cesiumContainer");
   const custom = new Cesium.ArcGisMapServerImageryProvider({
-    url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer",
+    url: "//services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer",
   });
 
   const viewer = new Cesium.Viewer("cesiumContainer", {
@@ -32,15 +32,40 @@ onMounted(async () => {
     // navigationInstructionsInitiallyVisible: false, // 初始导航指示
   });
 
+  // viewer.camera.flyTo({
+  //   destination: Cesium.Cartesian3.fromDegrees(-77.05597, 38.87126, 2000), // 设置位置经纬度和高度
+  //   duration: 0, // 动画持续时间
+  //   orientation: {
+  //     heading: Cesium.Math.toRadians(90), // 方向
+  //     pitch: Cesium.Math.toRadians(-90), // 俯仰 0为水平视角
+  //     roll: 0, // 翻滚
+  //   },
+  // });
   viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(-77.05597, 38.87126, 2000), // 设置位置经纬度和高度
-    duration: 0, // 动画持续时间
+    destination: new Cesium.Cartesian3(1332761, -4662399, 4137888),
     orientation: {
-      heading: Cesium.Math.toRadians(90), // 方向
-      pitch: Cesium.Math.toRadians(-90), // 俯仰 0为水平视角
-      roll: 0, // 翻滚
+      heading: 0.6,
+      pitch: -0.66,
     },
   });
+  const heightStyle = new Cesium.Cesium3DTileStyle({
+    color: {
+      conditions: [
+        ["${Height} >= 300", "rgba(45, 0, 75, 0.5)"],
+        ["${Height} >= 200", "rgb(102, 71, 151)"],
+        ["${Height} >= 100", "rgb(170, 162, 204)"],
+        ["${Height} >= 50", "rgb(224, 226, 238)"],
+        ["${Height} >= 25", "rgb(252, 230, 200)"],
+        ["${Height} >= 10", "rgb(248, 176, 87)"],
+        ["${Height} >= 5", "rgb(198, 106, 11)"],
+        ["true", "rgb(127, 59, 8)"],
+      ],
+    },
+  });
+  const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(75343);
+  tileset.style = heightStyle;
+
+  viewer.scene.primitives.add(tileset);
 });
 </script>
 
