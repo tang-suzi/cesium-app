@@ -49,6 +49,7 @@ onMounted(async () => {
       pitch: -0.66,
     },
   });
+
   const heightStyle = new Cesium.Cesium3DTileStyle({
     color: {
       conditions: [
@@ -66,6 +67,7 @@ onMounted(async () => {
   const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(75343);
   tileset.style = heightStyle;
   viewer.scene.primitives.add(tileset);
+
   const neighborhoodsPromise = await Cesium.GeoJsonDataSource.load(geojson);
   viewer.dataSources.add(neighborhoodsPromise);
   let neighborhoods = neighborhoodsPromise.entities;
@@ -88,7 +90,7 @@ onMounted(async () => {
       let polyCenter = Cesium.BoundingSphere.fromPoints(polyPositions).center;
       polyCenter = Cesium.Ellipsoid.WGS84.scaleToGeodeticSurface(polyCenter);
       entity.position = polyCenter;
-      
+
       // 生成标签
       entity.label = {
         text: entity.name, // 标签内容
@@ -99,11 +101,70 @@ onMounted(async () => {
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM, // 垂直位置
         pixelOffset: new Cesium.Cartesian2(0, -9), // 偏移
         eyeOffset: new Cesium.Cartesian3(0, 0, -5), // 眼睛偏移
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(10.0, 8000.0), // 显示距离
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
+          10.0,
+          8000.0
+        ), // 显示距离
         disableDepthTestDistance: 100, // 深度测试
       };
     }
   }
+
+  const kmlOptions = {
+    camera: viewer.scene.camera,
+    canvas: viewer.scene.canvas,
+    clampToGround: true,
+  };
+
+  // http://catalog.opendata.city/dataset/pediacities-nyc-neighborhoods/resource/9177848-3c58-449c-a3f9-365ed2d6e4d2
+
+  const geocachePromise = await Cesium.KmlDataSource.load(
+    "./src/SampleData/sampleGeocacheLocations.kml",
+    kmlOptions
+  );
+  viewer.dataSources.add(geocachePromise);
+
+  const geocacheEntities = geocachePromise.entities.values;
+
+  for (let i = 0; i < geocacheEntities.length; i++) {
+    const entity = geocacheEntities[i];
+    console.log(entity)
+    console.log(Cesium.defined(entity.billboard))
+    if (Cesium.defined(entity.billboard)) {
+      entity.billboard.verticalOrigin = Cesium.VerticalOrigin.BOTTOM; // 垂直位置
+      // entity.billboard.image = "./assets/vue.svg"; // 图片
+      entity.label = undefined; // 标签禁用
+      entity.billboard.distanceDisplayCondition =
+        new Cesium.DistanceDisplayCondition(10.0, 20000.0); // 显示距离
+      const cartographicPosition = Cesium.Cartographic.fromCartesian(
+        entity.position.getValue(Cesium.JulianDate.now())
+      ); // 笛卡尔坐标转经纬度
+      const latitude = Cesium.Math.toDegrees(cartographicPosition.latitude); // 纬度
+      const longitude = Cesium.Math.toDegrees(cartographicPosition.longitude); // 经度
+      const description = `<table class="cesium-infoBox-defaultTable cesium-infoBox-defaultTable-lighter">
+          <tbody>
+            <tr>
+              <th>Longitude</th>
+              <td>${longitude.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <th>Latitude</th>
+              <td>${latitude.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <th>实时人流</th>
+              <td>${Math.floor(Math.random()*20000)}</td>
+            </tr>
+            <tr>
+              <th>安全等级</th>
+              <td>${Math.floor(Math.random()*5)}</td>
+            </tr>
+          </tbody>
+        </table>`;
+        entity.description = description;
+    }
+  }
+
 });
 </script>
 
