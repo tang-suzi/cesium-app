@@ -128,8 +128,6 @@ onMounted(async () => {
 
   for (let i = 0; i < geocacheEntities.length; i++) {
     const entity = geocacheEntities[i];
-    console.log(entity)
-    console.log(Cesium.defined(entity.billboard))
     if (Cesium.defined(entity.billboard)) {
       entity.billboard.verticalOrigin = Cesium.VerticalOrigin.BOTTOM; // 垂直位置
       // entity.billboard.image = "./assets/vue.svg"; // 图片
@@ -153,18 +151,50 @@ onMounted(async () => {
             </tr>
             <tr>
               <th>实时人流</th>
-              <td>${Math.floor(Math.random()*20000)}</td>
+              <td>${Math.floor(Math.random() * 20000)}</td>
             </tr>
             <tr>
               <th>安全等级</th>
-              <td>${Math.floor(Math.random()*5)}</td>
+              <td>${Math.floor(Math.random() * 5)}</td>
             </tr>
           </tbody>
         </table>`;
-        entity.description = description;
+      entity.description = description;
     }
   }
 
+  const dronePromise = await Cesium.CzmlDataSource.load(
+    "./src/SampleData/SampleFlight.czml"
+  );
+  console.log(dronePromise);
+  console.log(viewer);
+  let drone;
+  viewer.dataSources.add(dronePromise);
+  drone = dronePromise.entities.getById("Aircraft/Aircraft1");
+
+  if (!drone) {
+    console.error("Entity 'Aircraft/Aircraft1' not found!");
+    return;
+  }
+  console.log("Drone Entity:", drone);
+  drone.model = {
+    uri: "./src/SampleData/Models/Cesium_air.glb",
+    minimumPixelSize: 128,
+    maximumScale: 1000,
+    silhouetteColor: Cesium.Color.WHITE,
+    silhouetteSize: 2,
+  };
+  console.log("Model assigned to drone.");
+  drone.orientation = new Cesium.VelocityOrientationProperty(drone.position);
+  console.log("Orientation set for drone.");
+  drone.position.setInterpolationOptions({
+    interpolationAlgorithm: Cesium.HermitePolynomialApproximation,
+    interpolationDegree: 2,
+  });
+  console.log("Interpolation options set for drone.");
+  drone.viewFrom = new Cesium.Cartesian3(-30, 0, 0);
+  console.log("ViewFrom set for drone.");
+  viewer.clock.shouldAnimate = true;
 });
 </script>
 
